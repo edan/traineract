@@ -1,0 +1,23 @@
+#!/bin/bash
+
+apt-get -y update
+apt-get -y install libicu-dev
+apt-get -y install libpango1.0-dev
+apt-get -y install libcairo2-dev
+apt-get -y install libleptonica-dev
+
+apt-get -y source tesseract-ocr
+
+cd /home/vagrant/tesseract-3.03.02/
+./configure
+make
+sudo make install
+make training
+make training-install
+
+apt-get -y remove tesseract-ocr
+apt-get -y remove dictionaries-common
+
+apt-get -y install xfce4 xfce4-session virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11 x-init
+apt-get -y install gnome-icon-theme-full tango-icon-theme
+echo “allowed_users=anybody” > /etc/X11/Xwrapper.config
