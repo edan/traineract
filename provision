@@ -5,18 +5,29 @@ apt-get -y install libicu-dev
 apt-get -y install libpango1.0-dev
 apt-get -y install libcairo2-dev
 apt-get -y install libleptonica-dev
+apt-get -y install imagemagick
 
 apt-get -y source tesseract-ocr
 
 cd /home/vagrant/tesseract-3.03.02/
 ./configure
 make
-sudo make install
+make install
 make training
 make training-install
 
 apt-get -y remove tesseract-ocr
-apt-get -y remove dictionaries-common
 
-apt-get -y install xfce4 xfce4-session xfce4-goodies xinit gnome-icon-theme-full tango-icon-theme
-echo "allowed_users=anybody" > /etc/X11/Xwrapper.config
+ldconfig
+
+echo 'Get English training data'
+curl https://tesseract-ocr.googlecode.com/files/tesseract-ocr-3.02.eng.tar.gz \
+  -o - | tar -xzf -
+cp tesseract-ocr/tessdata/* /usr/local/share/tessdata/
+
+echo 'export PATH=$PATH:/home/vagrant/tesseract-3.03.02/training/' >> ~/.bash_profile
+echo 'export TESSDATA_PREFIX=/usr/local/share/tessdata/' >> ~/.bash_profile
+
+echo "%vagrant ALL=(ALL:ALL) NOPASSWD:ALL" | (EDITOR="tee -a" visudo)
+sudo usermod -a -G vagrant vagrant
+sudo usermod -a -G adm vagrant

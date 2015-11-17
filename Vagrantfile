@@ -16,7 +16,6 @@ Vagrant.configure(2) do |config|
 
   # Local. Artisanal. Virtual. Box.
   config.vm.provider :virtualbox do |vb, override|
-    vb.gui    = true
     vb.cpus   = `sysctl -n hw.ncpu`.to_i
     vb.memory = "8192"
   end
