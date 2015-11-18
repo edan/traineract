@@ -12,7 +12,7 @@ apt-get -y source tesseract-ocr
 cd /home/vagrant/tesseract-3.03.02/
 ./configure
 make
-make install
+sudo make install
 make training
 make training-install
 
@@ -25,7 +25,7 @@ curl https://tesseract-ocr.googlecode.com/files/tesseract-ocr-3.02.eng.tar.gz \
   -o - | tar -xzf -
 cp tesseract-ocr/tessdata/* /usr/local/share/tessdata/
 
-echo 'export PATH=$PATH:/home/vagrant/tesseract-3.03.02/training/' >> ~/.bash_profile
+echo 'export PATH=$PATH:/home/vagrant/tesseract-3.03.02/training' >> ~/.bash_profile
 echo 'export TESSDATA_PREFIX=/usr/local/share/tessdata/' >> ~/.bash_profile
 
 echo "%vagrant ALL=(ALL:ALL) NOPASSWD:ALL" | (EDITOR="tee -a" visudo)
