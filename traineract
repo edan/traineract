@@ -38,6 +38,13 @@ then
   # train with your box file
   tesseract "${prefix}.tif" "${prefix}" box.train.stderr
 
+
+  # put all font that you want to be included for the language
+  # <fontname> <italic> <bold> <fixed> <serif> <fraktur>
+  touch "${font}_font_properties"
+  echo "${font} 0 0 0 0 0" > "${font}_font_properties"
+  sudo mv "${font}_font_properties" $training_path
+
   # change into training directory
   cd $training_path
 
@@ -46,10 +53,6 @@ then
 
   # i don't know what this does
   # set_unicharset_properties -U input_unicharset -O output_unicharset --script_dir=training/langdata
-
-  # put all font that you want to be included for the language
-  sudo touch "${font}_font_properties"
-  sudo sh -c 'echo $font 1 0 0 1 0 > "${font}_font_properties"'
 
   # make shapetable
   sudo ./shapeclustering -F "${font}_font_properties" -U unicharset "${prefix_with_path}.tr"
@@ -77,17 +80,15 @@ then
   cur_time=`date +%s`
   bak_dir="${prefix_with_path}_traindata/${cur_time}"
   mkdir $bak_dir
-  sudo cp "${lang}.traineddata" $pffmtable $inttemp $shapetable $normproto $bak_dir
+  sudo cp "${lang}.traineddata" "${font}_font_properties" $pffmtable $inttemp $shapetable $normproto $bak_dir
 
   echo "Created training data in ${training_path} and backed up to ${bak_dir}"
+
+  sudo cp "${lang}.traineddata" $TESSDATA_PREFIX
+  echo "Copied ${lang}.traineddata to ${TESSDATA_PREFIX}"
 elif [ "$mode" == "test" ]
 then
   echo "Testing ${lang}"
-
-  cd $training_path
-
-  sudo cp "${lang}.traineddata" $TESSDATA_PREFIX
-
   #test
   cd $resource_path
   if [ -z "$image" ]
@@ -95,8 +96,8 @@ then
     tesseract "${prefix}.tif" "${prefix}_out" -l $lang
     echo "Generated output at ${prefix_with_path}_out.txt"
   else
-    tesseract "${image}" "${image}_out" -l $lang
-    echo "Generated output at ${resource_path}/${image}_out.txt"
+    tesseract "${image}" "${image}.${lang}" -l $lang
+    echo "Generated output at ${resource_path}/${image}.${lang}.txt"
   fi
 else
   echo "usage: traineract [box|train|test] --font FONT_NAME"
