@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # https://github.com/tesseract-ocr/tesseract/wiki/TrainingTesseract
+mode=$1;shift 1;
+
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --font) font="$2"; shift 2;;
     --lang) lang="$2"; shift 2;;
     --exp) exp="exp$2"; shift 2;;
+    --image) image="$2"; shift 2;;
     -*) echo "unknown option: $1" >&2; exit 1;;
     *) echo "unknown option: $1" >&2; exit 1;;
   esac
@@ -20,49 +23,83 @@ training_path="/home/vagrant/tesseract-3.03.02/training"
 prefix="${lang}.${font}.${exp}"
 prefix_with_path="${resource_path}/${prefix}"
 
+echo $prefix_with_path
 echo "$TESSDATA_PREFIX"
-echo "start training for $prefix"
-
-sudo tesseract "${prefix}.tif" "${prefix}" batch.nochop makebox
-
-# train with your box file
-tesseract "${prefix}.tif" "${prefix}" box.train.stderr
-
-cd training_path
-
-# makes unicharset
-sudo ./unicharset_extractor "${prefix_with_path}.box" # lang.fontname.exp1.box ...
-
-# i don't know what this does
-# set_unicharset_properties -U input_unicharset -O output_unicharset --script_dir=training/langdata
-
-# put all your fonts there
-sudo touch "${font}_font_properties"
-sudo sh -c 'echo $font 1 0 0 1 0 > "${font}_font_properties"'
-
-# makes shapetable
-sudo ./shapeclustering -F "${font}_font_properties" -U unicharset "${prefix_with_path}.tr"
 
 
-# inttemp (the shape prototypes) 
-# pffmtable (the number of expected features for each character).
-# (A third file called Microfeat is also written by this program, but it is not used.)
-sudo ./mftraining -F "${font}_font_properties" -U unicharset -O "${lang}.unicharset" "${prefix_with_path}.tr" 
+if [ "$mode" == "box" ]
+then
+  echo "Creating box for $prefix"
+  sudo tesseract "${prefix}.tif" "${prefix}" batch.nochop makebox
+  echo "${prefix}.box created"
+elif [ "$mode" == "train" ]
+then
+  echo "Start training for $prefix"
+  # train with your box file
+  tesseract "${prefix}.tif" "${prefix}" box.train.stderr
 
+  # change into training directory
+  cd $training_path
 
-# makes normproto
-sudo ./cntraining "${prefix_with_path}.tr" # lang.fontname.exp1.tr ...
+  # make unicharset
+  sudo ./unicharset_extractor "${prefix_with_path}.box" # lang.fontname.exp1.box ...
 
-sudo mv pffmtable "${lang}.pffmtable"
-sudo mv inttemp "${lang}.inttemp"
-sudo mv shapetable "${lang}.shapetable"
-sudo mv normproto "${lang}.normproto"
-sudo ./combine_tessdata $lang.
+  # i don't know what this does
+  # set_unicharset_properties -U input_unicharset -O output_unicharset --script_dir=training/langdata
 
-# TODO CLEANUP
+  # put all font that you want to be included for the language
+  sudo touch "${font}_font_properties"
+  sudo sh -c 'echo $font 1 0 0 1 0 > "${font}_font_properties"'
 
-sudo cp "${lang}.traineddata" $TESSDATA_PREFIX
+  # make shapetable
+  sudo ./shapeclustering -F "${font}_font_properties" -U unicharset "${prefix_with_path}.tr"
 
-#test
-cd $resource_path
-tesseract "${prefix}.tif" "${prefix}_out" -l $lang
+  # creates inttemp (the shape prototypes) 
+  # creates pffmtable (the number of expected features for each character)
+  # Microfeat is also written by this program, but it is not used
+  sudo ./mftraining -F "${font}_font_properties" -U unicharset -O "${lang}.unicharset" "${prefix_with_path}.tr" 
+
+  # creates normproto
+  sudo ./cntraining "${prefix_with_path}.tr" # lang.fontname.exp1.tr ...
+
+  pffmtable="${lang}.pffmtable"
+  inttemp="${lang}.inttemp"
+  shapetable="${lang}.shapetable"
+  normproto="${lang}.normproto"
+
+  # rename files to prepend language.
+  sudo mv pffmtable "${pffmtable}"
+  sudo mv inttemp "${inttemp}"
+  sudo mv shapetable "${shapetable}"
+  sudo mv normproto "${normproto}"
+  sudo ./combine_tessdata "${lang}."
+
+  cur_time=`date +%s`
+  bak_dir="${prefix_with_path}_traindata/${cur_time}"
+  mkdir $bak_dir
+  sudo cp "${lang}.traineddata" $pffmtable $inttemp $shapetable $normproto $bak_dir
+
+  echo "Created training data in ${training_path} and backed up to ${bak_dir}"
+elif [ "$mode" == "test" ]
+then
+  echo "Testing ${lang}"
+
+  cd $training_path
+
+  sudo cp "${lang}.traineddata" $TESSDATA_PREFIX
+
+  #test
+  cd $resource_path
+  if [ -z "$image" ]
+  then
+    tesseract "${prefix}.tif" "${prefix}_out" -l $lang
+    echo "Generated output at ${prefix_with_path}_out.txt"
+  else
+    tesseract "${image}" "${image}_out" -l $lang
+    echo "Generated output at ${resource_path}/${image}_out.txt"
+  fi
+else
+  echo "usage: traineract [box|train|test] --font FONT_NAME"
+  echo "traineract [box|train|test] --font FONT_NAME --lang LANG_NAME"
+  echo "traineract [box|train|test] --font FONT_NAME --lang LANG_NAME --exp NUM"
+fi
