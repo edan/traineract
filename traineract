@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# https://github.com/tesseract-ocr/tesseract/wiki/TrainingTesseract
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --font) font="$2"; shift 2;;
+    --lang) lang="$2"; shift 2;;
+    --exp) exp="exp$2"; shift 2;;
+    -*) echo "unknown option: $1" >&2; exit 1;;
+    *) echo "unknown option: $1" >&2; exit 1;;
+  esac
+done
+
+lang="${lang:-eng}"
+exp="${exp:-exp0}"
+
+resource_path="/vagrant"
+training_path="/home/vagrant/tesseract-3.03.02/training"
+
+prefix="${lang}.${font}.${exp}"
+prefix_with_path="${resource_path}/${prefix}"
+
+echo "$TESSDATA_PREFIX"
+echo "start training for $prefix"
+
+sudo tesseract "${prefix}.tif" "${prefix}" batch.nochop makebox
+
+# train with your box file
+tesseract "${prefix}.tif" "${prefix}" box.train.stderr
+
+cd training_path
+
+# makes unicharset
+sudo ./unicharset_extractor "${prefix_with_path}.box" # lang.fontname.exp1.box ...
+
+# i don't know what this does
+# set_unicharset_properties -U input_unicharset -O output_unicharset --script_dir=training/langdata
+
+# put all your fonts there
+sudo touch "${font}_font_properties"
+sudo sh -c 'echo $font 1 0 0 1 0 > "${font}_font_properties"'
+
+# makes shapetable
+sudo ./shapeclustering -F "${font}_font_properties" -U unicharset "${prefix_with_path}.tr"
+
+
+# inttemp (the shape prototypes) 
+# pffmtable (the number of expected features for each character).
+# (A third file called Microfeat is also written by this program, but it is not used.)
+sudo ./mftraining -F "${font}_font_properties" -U unicharset -O "${lang}.unicharset" "${prefix_with_path}.tr" 
+
+
+# makes normproto
+sudo ./cntraining "${prefix_with_path}.tr" # lang.fontname.exp1.tr ...
+
+sudo mv pffmtable "${lang}.pffmtable"
+sudo mv inttemp "${lang}.inttemp"
+sudo mv shapetable "${lang}.shapetable"
+sudo mv normproto "${lang}.normproto"
+sudo ./combine_tessdata $lang.
+
+# TODO CLEANUP
+
+sudo cp "${lang}.traineddata" $TESSDATA_PREFIX
+
+#test
+cd $resource_path
+tesseract "${prefix}.tif" "${prefix}_out" -l $lang
