@@ -12,7 +12,7 @@ File.write("#{box_file_name}.bak", box_file)
 
 training_text_file = ARGV[1].nil? ? './training_text.txt' : ARGV[1]
 training_text = File.read(training_text_file)
-training_text = training_text.gsub(' ','').chomp.split('')
+training_text = training_text.gsub(' ','').gsub("\n",'').chomp.split('')
 
 character_count = training_text.count
 box_coordinates = box_file.split("\n")
