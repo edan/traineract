@@ -1,4 +1,4 @@
-#!/usr/env/bin ruby
+#!/usr/bin/env ruby
 
 box_file_name = ARGV[0]
 if box_file_name.nil?
