@@ -78,7 +78,7 @@ then
   sudo ./combine_tessdata "${lang}."
 
   cur_time=`date +%s`
-  bak_dir="${prefix_with_path}_traindata/${cur_time}"
+  bak_dir="${prefix_with_path}_traindata-${cur_time}"
   mkdir $bak_dir
   sudo cp "${lang}.traineddata" "${font}_font_properties" $pffmtable $inttemp $shapetable $normproto $bak_dir
 
