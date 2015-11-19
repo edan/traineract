@@ -23,6 +23,8 @@ box_coordinates.each_with_index do |bc, idx|
   vertical_diff << "#{bc.split.first} #{training_text[idx]} #{idx}\n"
 end
 
+puts "comparing #{box_file_name} to #{training_text_file}"
+
 if character_count > box_coordinates.count
   puts vertical_diff
   raise "more characters #{character_count} than boxes #{box_coordinates.count}!"
