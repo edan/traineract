@@ -1,11 +1,17 @@
 #!/usr/env/bin ruby
 
 box_file_name = ARGV[0]
+if box_file_name.nil?
+  puts "usage: ./detect_errors PATH_TO_BOX_FILE [PATH_TO_TRAINING_TEXT_FILE]"
+  Process.exit 1
+end
+
 box_file = File.read(box_file_name)
 
 File.write("#{box_file_name}.bak", box_file)
 
-training_text = File.read('./training_text.txt')
+training_text_file = ARGV[1].nil? ? './training_text.txt' : ARGV[1]
+training_text = File.read(training_text_file)
 training_text = training_text.gsub(' ','').chomp.split('')
 
 character_count = training_text.count
@@ -49,3 +55,5 @@ else
 
   puts "rewrote #{box_file_name}"
 end
+
+Process.exit 0
