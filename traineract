@@ -14,7 +14,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-lang="${lang:-eng}"
+lang="${lang:-$font}"
 exp="${exp:-exp0}"
 
 resource_path="/vagrant"
