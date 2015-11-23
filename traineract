@@ -5,8 +5,8 @@ mode=$1;shift 1;
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --font) font="$2"; shift 2;;
     --lang) lang="$2"; shift 2;;
+    --font) font="$2"; shift 2;;
     --exp) exp="exp$2"; shift 2;;
     --image) image="$2"; shift 2;;
     -*) echo "unknown option: $1" >&2; exit 1;;
@@ -14,10 +14,10 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-lang="${lang:-$font}"
+font="${font:-$lang}"
 exp="${exp:-exp0}"
 
-resource_path="/vagrant"
+resource_path="/vagrant/${lang}"
 training_path="/home/vagrant/tesseract-3.03.02/training"
 
 prefix="${lang}.${font}.${exp}"
@@ -30,13 +30,13 @@ echo "$TESSDATA_PREFIX"
 if [ "$mode" == "box" ]
 then
   echo "Creating box for $prefix"
-  sudo tesseract "${prefix}.tif" "${prefix}" batch.nochop makebox
-  echo "${prefix}.box created"
+  sudo tesseract "${prefix_with_path}.tif" "${prefix_with_path}" batch.nochop makebox
+  echo "${prefix_with_path}.box created"
 elif [ "$mode" == "train" ]
 then
   echo "Start training for $prefix"
   # train with your box file
-  tesseract "${prefix}.tif" "${prefix}" box.train.stderr
+  tesseract "${prefix_with_path}.tif" "${prefix_with_path}" box.train.stderr
 
 
   # put all font that you want to be included for the language
@@ -93,14 +93,16 @@ then
   cd $resource_path
   if [ -z "$image" ]
   then
-    tesseract "${prefix}.tif" "${prefix}_out" -l $lang
-    echo "Generated output at ${prefix_with_path}_out.txt"
+    echo "traineract test --image PATH_TO_IMAGE --lang"
   else
-    tesseract "${image}" "${image}.${lang}" -l $lang
-    echo "Generated output at ${resource_path}/${image}.${lang}.txt"
+    cur_time=`date +%s`
+    out_path="${resource_path}/${lang}.test.${cur_time}"
+    tesseract "${image}" "${out_path}" -l $lang
+
+    echo "Generated output at ${out_path}.txt"
   fi
 else
-  echo "usage: traineract [box|train|test] --font FONT_NAME"
+  echo "usage: traineract [box|train|test] --lang LANG_NAME"
   echo "traineract [box|train|test] --font FONT_NAME --lang LANG_NAME"
   echo "traineract [box|train|test] --font FONT_NAME --lang LANG_NAME --exp NUM"
 fi
